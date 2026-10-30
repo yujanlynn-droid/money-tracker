@@ -1,0 +1,346 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的記帳本｜個人記帳系統</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Chart.js 圖表套件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+<div class="container">
+
+    <!-- 網站標題 -->
+    <header class="header">
+        <div>
+            <h1>我的記帳本</h1>
+            <p>記錄每一筆收支，輕鬆管理生活開銷</p>
+        </div>
+        <span class="header-tag">個人財務管理</span>
+    </header>
+
+    <!-- 月份篩選 -->
+    <section class="section">
+        <h2>每月收支查詢</h2>
+        <p class="section-description">
+            選擇年份與月份，查看該月的記帳紀錄。
+        </p>
+
+        <form action="{{ url_for('home') }}" method="GET">
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="year">年份</label>
+                    <input type="number"
+                           id="year"
+                           name="year"
+                           min="1"
+                           max="9999"
+                           value="{{ year }}"
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label for="month">月份</label>
+                    <select id="month" name="month">
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}"
+                            {% if month == m %}selected{% endif %}>
+                            {{ m }} 月
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="add-button">
+                查詢收支
+            </button>
+        </form>
+    </section>
+
+    <!-- 收支統計 -->
+    <section class="summary">
+
+        <div class="card balance-card">
+            <p>本月結餘</p>
+            <h2>NT$ {{ "{:,}".format(balance) }}</h2>
+            <span>{{ year }} 年 {{ month }} 月</span>
+        </div>
+
+        <div class="card">
+            <p>本月收入</p>
+            <h2 class="income">
+                NT$ {{ "{:,}".format(total_income) }}
+            </h2>
+            <span>當月收入總額</span>
+        </div>
+
+        <div class="card">
+            <p>本月支出</p>
+            <h2 class="expense">
+                NT$ {{ "{:,}".format(total_expense) }}
+            </h2>
+            <span>當月支出總額</span>
+        </div>
+
+    </section>
+
+    <!-- 支出分類圖表 -->
+    <section class="section">
+        <h2>支出分類統計</h2>
+        <p class="section-description">
+            {{ year }} 年 {{ month }} 月各類別的支出比例
+        </p>
+
+        {% if total_expense > 0 %}
+            
+<div class="expense-chart-layout">
+    <div class="chart-container">
+        <canvas id="expenseChart"></canvas>
+    </div>
+
+    <div class="category-breakdown">
+        <h3>各分類支出明細</h3>
+
+        {% for category in category_stats %}
+        <div class="category-item">
+            <div class="category-item-name">
+                <span>{{ category.name }}</span>
+                <strong>{{ category.percentage }}%</strong>
+            </div>
+
+            <div class="category-progress">
+                <div class="category-progress-fill"
+                     style="width: {{ category.percentage }}%;">
+                </div>
+            </div>
+
+            <div class="category-amount">
+                NT$ {{ "{:,}".format(category.amount) }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+        {% else %}
+            <p class="empty-message">
+                這個月份還沒有支出紀錄，新增支出後就會顯示圖表。
+            </p>
+        {% endif %}
+    </section>
+
+    <!-- 新增記帳紀錄 -->
+    <section class="section">
+        <h2>新增記帳紀錄</h2>
+        <p class="section-description">
+            填寫以下資料，記錄你的收入與支出。
+        </p>
+
+        <form action="{{ url_for('add_record') }}" method="POST">
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="type">收支類型</label>
+                    <select id="type" name="type" required>
+                        <option value="expense">支出</option>
+                        <option value="income">收入</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">金額（新臺幣）</label>
+                    <input type="number"
+                           id="amount"
+                           name="amount"
+                           min="1"
+                           step="1"
+                           required
+                           placeholder="請輸入金額">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">收支分類</label>
+                    <select id="category" name="category" required>
+                        <option>餐飲</option>
+                        <option>交通</option>
+                        <option>購物</option>
+                        <option>娛樂</option>
+                        <option>生活用品</option>
+                        <option>醫療保健</option>
+                        <option>薪資</option>
+                        <option>其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">記帳日期</label>
+                    <input type="date"
+                           id="date"
+                           name="date"
+                           required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="note">備註</label>
+                    <input type="text"
+                           id="note"
+                           name="note"
+                           maxlength="200"
+                           placeholder="例如：午餐、捷運、薪水">
+                </div>
+
+            </div>
+
+            <button type="submit" class="add-button">
+                ＋ 新增紀錄
+            </button>
+        </form>
+    </section>
+
+    <!-- 收支紀錄 -->
+    <section class="section">
+        <div class="section-header">
+            <h2>我的收支紀錄</h2>
+            <span class="record-count">
+                共 {{ records|length }} 筆紀錄
+            </span>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>類型</th>
+                        <th>分類</th>
+                        <th>備註</th>
+                        <th>金額</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for record in records %}
+                    <tr>
+                        <td>{{ record["date"] }}</td>
+
+                        <td>
+                            {% if record["type"] == "income" %}
+                                <span class="tag income-tag">收入</span>
+                            {% else %}
+                                <span class="tag expense-tag">支出</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ record["category"] }}</td>
+                        <td>{{ record["note"] or "—" }}</td>
+
+                        <td>
+                            {% if record["type"] == "income" %}
+                                <span class="income">
+                                    + NT$ {{ "{:,}".format(record["amount"]) }}
+                                </span>
+                            {% else %}
+                                <span class="expense">
+                                    - NT$ {{ "{:,}".format(record["amount"]) }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="record-actions">
+                                <a class="edit-button"
+                                   href="{{ url_for('edit_record', record_id=record['id']) }}">
+                                    編輯
+                                </a>
+
+                                <form action="{{ url_for('delete_record', record_id=record['id']) }}"
+                                      method="POST"
+                                      onsubmit="return confirm('確定要刪除這筆紀錄嗎？');">
+                                    <button type="submit" class="delete-button">
+                                        刪除
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-message">
+                            這個月份尚無記帳紀錄。
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer>
+        <p>我的記帳本 © 2026｜讓記帳成為生活的一部分</p>
+    </footer>
+
+</div>
+
+<!-- 圓餅圖 -->
+{% if total_expense > 0 %}
+<script>
+    const categoryLabels = {{ category_labels | tojson }};
+    const categoryValues = {{ category_values | tojson }};
+
+    const chartCanvas = document.getElementById("expenseChart");
+
+    if (chartCanvas && typeof Chart !== "undefined") {
+        new Chart(chartCanvas, {
+            type: "doughnut",
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryValues,
+                    backgroundColor: [
+                        "#a78bca",
+                        "#f2a6b3",
+                        "#8ecac1",
+                        "#f3c58d",
+                        "#91a9df",
+                        "#c4a6db",
+                        "#d5c9a8",
+                        "#b8c0cc"
+                    ],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom"
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                return context.label + "：NT$ " +
+                                    value.toLocaleString("zh-TW");
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endif %}
+
+</body>
+</html>

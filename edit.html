@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>編輯紀錄｜我的記帳本</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+
+    <header class="header">
+        <div>
+            <h1>編輯記帳紀錄</h1>
+            <p>修改已建立的收入或支出資料</p>
+        </div>
+        <span class="header-tag">個人財務管理</span>
+    </header>
+
+    <section class="section">
+        <h2>修改紀錄</h2>
+        <p class="section-description">
+            修改完成後，點選儲存即可更新資料。
+        </p>
+
+        <form method="POST"
+              action="{{ url_for('edit_record', record_id=record['id']) }}">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="type">收支類型</label>
+                    <select id="type" name="type" required>
+                        <option value="expense"
+                            {% if record["type"] == "expense" %}selected{% endif %}>
+                            支出
+                        </option>
+                        <option value="income"
+                            {% if record["type"] == "income" %}selected{% endif %}>
+                            收入
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">金額（新臺幣）</label>
+                    <input type="number" id="amount" name="amount"
+                           min="1" step="1" required
+                           value="{{ record['amount'] }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">收支分類</label>
+                    <select id="category" name="category" required>
+                        {% for category in ["餐飲", "交通", "購物", "娛樂",
+                                            "生活用品", "醫療保健", "薪資", "其他"] %}
+                        <option value="{{ category }}"
+                            {% if record["category"] == category %}selected{% endif %}>
+                            {{ category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">記帳日期</label>
+                    <input type="date" id="date" name="date"
+                           required value="{{ record['date'] }}">
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="note">備註</label>
+                    <input type="text" id="note" name="note"
+                           maxlength="200"
+                           value="{{ record['note'] or '' }}">
+                </div>
+            </div>
+
+            <button type="submit" class="add-button">
+                儲存修改
+            </button>
+
+            <a href="{{ url_for('home') }}" class="cancel-button">
+                取消並返回首頁
+            </a>
+        </form>
+    </section>
+
+</div>
+</body>
+</html>
